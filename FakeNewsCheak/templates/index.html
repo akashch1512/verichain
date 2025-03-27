@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeriChain AI | Fact Checking Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6e44ff;
+            --secondary: #00e4ff;
+            --dark: #0a0a12;
+            --darker: #050508;
+            --light: #f0f0f0;
+            --card-bg: rgba(25, 25, 40, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8d6;
+            --true-color: #00ff88;
+            --false-color: #ff3860;
+        }
+        
+        body {
+            background: var(--darker);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+            object-fit: cover;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 1px;
+            font-size: 1.5rem;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(110, 68, 255, 0.2);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            color: var(--text-primary);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(110, 68, 255, 0.3);
+        }
+        
+        .form-control {
+            background: rgba(35, 35, 55, 0.8);
+            color: var(--text-primary);
+            border: 1px solid rgba(110, 68, 255, 0.3);
+            padding: 12px 15px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            background: rgba(45, 45, 70, 0.8);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(110, 68, 255, 0.25);
+            color: var(--text-primary);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(110, 68, 255, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(110, 68, 255, 0.5);
+            color: white;
+        }
+        
+        .loading-container {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .verification-results {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .verification-item {
+            background: rgba(40, 40, 60, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            color: var(--text-primary);
+        }
+        
+        .verification-item.verified-true {
+            border-left-color: var(--true-color);
+        }
+        
+        .verification-item.verified-false {
+            border-left-color: var(--false-color);
+        }
+        
+        .verification-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(110, 68, 255, 0.1), transparent);
+            transition: width 0.5s ease;
+        }
+        
+        .verification-icon {
+            width: 30px;
+            height: 30px;
+            margin-right: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+        }
+        
+        .verification-text {
+            font-size: 1rem;
+            font-weight: 500;
+            flex-grow: 1;
+            text-align: left;
+            color: var(--text-primary);
+        }
+        
+        .verification-status {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .status-true {
+            color: var(--true-color);
+        }
+        
+        .status-false {
+            color: var(--false-color);
+        }
+        
+        .ai-name {
+            color: var(--secondary);
+            font-weight: 600;
+        }
+        
+        #resultContainer {
+            display: none;
+            margin-top: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            border-top: 2px solid var(--primary);
+            color: var(--text-primary);
+        }
+        
+        .result-title {
+            color: var(--secondary);
+            margin-bottom: 20px;
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .result-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--secondary), transparent);
+        }
+        
+        .result-content {
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+        
+        .verification-summary {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(40, 40, 60, 0.8);
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .text-muted {
+            color: var(--text-secondary) !important;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .tech-border {
+            position: relative;
+        }
+        
+        .tech-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 14px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--primary));
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        /* Custom verification icons */
+        .verichain-icon { color: #6e44ff; }
+        .neuralink-icon { color: #00e4ff; }
+        .quantum-icon { color: #ff6b00; }
+        .deepscan-icon { color: #00ff88; }
+        .cognix-icon { color: #c47dff; }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .card {
+                padding: 20px;
+            }
+            .form-control, .btn-primary {
+                padding: 10px 15px;
+            }
+            .navbar-brand {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background -->
+    <video autoplay muted loop class="bg-animation">
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-a-network-connection-31508-large.mp4" type="video/mp4">
+    </video>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent py-3">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-link me-2"></i>VeriChain AI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-home me-1"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-info-circle me-1"></i> About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="fas fa-envelope me-1"></i> Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card tech-border p-4 mb-4">
+                    <h2 class="text-center mb-4">
+                        <i class="fas fa-shield-alt me-2"></i>AI Fact Verification Network
+                    </h2>
+                    <p class="text-center text-muted mb-4">
+                        Cross-verified by multiple AI systems for maximum accuracy
+                    </p>
+                    
+                    <form method="POST" action="" id="factForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="factInput" class="form-label">Enter news, text or claim to verify:</label>
+                            <textarea class="form-control" id="factInput" name="fact_input" rows="4" placeholder="Paste the content you want to verify..." required>{% if input_text %}{{ input_text }}{% endif %}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-3" id="verifyBtn">
+                            <i class="fas fa-search me-2"></i> Verify Across AI Network
+                        </button>
+                    </form>
+                </div>
+
+                <div class="loading-container" id="loadingSection">
+                    <h5 class="text-center mb-4 text-white"><i class="fas fa-cog fa-spin me-2"></i>Verification in Progress</h5>
+                    
+                    <div class="verification-item">
+                        <div class="verification-icon verichain-icon">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="verification-text">
+                            Analyzing with <span class="ai-name">VeriChain Core</span>...
+                        </div>
+                    </div>
+                    
+                    <div class="verification-item">
+                        <div class="verification-icon neuralink-icon">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="verification-text">
+                            Contextual understanding with <span class="ai-name">Neuralink AI</span>...
+                        </div>
+                    </div>
+                    
+                    <div class="verification-item">
+                        <div class="verification-icon quantum-icon">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="verification-text">
+                            Fact-checking with <span class="ai-name">Quantum Validator</span>...
+                        </div>
+                    </div>
+                    
+                    <div class="verification-item">
+                        <div class="verification-icon deepscan-icon">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="verification-text">
+                            Deep pattern analysis with <span class="ai-name">DeepScan</span>...
+                        </div>
+                    </div>
+                    
+                    <div class="verification-item">
+                        <div class="verification-icon cognix-icon">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <div class="verification-text">
+                            Final consensus with <span class="ai-name">Cognix Network</span>...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="verification-results" id="verificationResults">
+                    <h5 class="text-center mb-4 text-white"><i class="fas fa-check-circle me-2"></i>Verification Results</h5>
+                    
+                    <!-- VeriChain Core Result -->
+                    <div class="verification-item {% if verichain_result == 'TRUE' %}verified-true{% elif verichain_result == 'FALSE' %}verified-false{% endif %}">
+                        <div class="verification-icon verichain-icon">
+                            <i class="fas fa-{% if verichain_result == 'TRUE' %}check{% elif verichain_result == 'FALSE' %}times{% else %}spinner fa-spin{% endif %}"></i>
+                        </div>
+                        <div class="verification-text">
+                            <span class="ai-name">VeriChain Core</span> verification
+                            <span class="verification-status {% if verichain_result == 'TRUE' %}status-true{% elif verichain_result == 'FALSE' %}status-false{% endif %}">
+                                {{ verichain_result|default:"ANALYZING" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Neuralink AI Result -->
+                    <div class="verification-item {% if neuralink_result == 'TRUE' %}verified-true{% elif neuralink_result == 'FALSE' %}verified-false{% endif %}">
+                        <div class="verification-icon neuralink-icon">
+                            <i class="fas fa-{% if neuralink_result == 'TRUE' %}check{% elif neuralink_result == 'FALSE' %}times{% else %}spinner fa-spin{% endif %}"></i>
+                        </div>
+                        <div class="verification-text">
+                            <span class="ai-name">Neuralink AI</span> verification
+                            <span class="verification-status {% if neuralink_result == 'TRUE' %}status-true{% elif neuralink_result == 'FALSE' %}status-false{% endif %}">
+                                {{ neuralink_result|default:"ANALYZING" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Quantum Validator Result -->
+                    <div class="verification-item {% if quantum_result == 'TRUE' %}verified-true{% elif quantum_result == 'FALSE' %}verified-false{% endif %}">
+                        <div class="verification-icon quantum-icon">
+                            <i class="fas fa-{% if quantum_result == 'TRUE' %}check{% elif quantum_result == 'FALSE' %}times{% else %}spinner fa-spin{% endif %}"></i>
+                        </div>
+                        <div class="verification-text">
+                            <span class="ai-name">Quantum Validator</span> verification
+                            <span class="verification-status {% if quantum_result == 'TRUE' %}status-true{% elif quantum_result == 'FALSE' %}status-false{% endif %}">
+                                {{ quantum_result|default:"ANALYZING" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- DeepScan Result -->
+                    <div class="verification-item {% if deepscan_result == 'TRUE' %}verified-true{% elif deepscan_result == 'FALSE' %}verified-false{% endif %}">
+                        <div class="verification-icon deepscan-icon">
+                            <i class="fas fa-{% if deepscan_result == 'TRUE' %}check{% elif deepscan_result == 'FALSE' %}times{% else %}spinner fa-spin{% endif %}"></i>
+                        </div>
+                        <div class="verification-text">
+                            <span class="ai-name">DeepScan</span> verification
+                            <span class="verification-status {% if deepscan_result == 'TRUE' %}status-true{% elif deepscan_result == 'FALSE' %}status-false{% endif %}">
+                                {{ deepscan_result|default:"ANALYZING" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Cognix Network Result -->
+                    <div class="verification-item {% if cognix_result == 'TRUE' %}verified-true{% elif cognix_result == 'FALSE' %}verified-false{% endif %}">
+                        <div class="verification-icon cognix-icon">
+                            <i class="fas fa-{% if cognix_result == 'TRUE' %}check{% elif cognix_result == 'FALSE' %}times{% else %}spinner fa-spin{% endif %}"></i>
+                        </div>
+                        <div class="verification-text">
+                            <span class="ai-name">Cognix Network</span> verification
+                            <span class="verification-status {% if cognix_result == 'TRUE' %}status-true{% elif cognix_result == 'FALSE' %}status-false{% endif %}">
+                                {{ cognix_result|default:"ANALYZING" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Final Analysis -->
+                    <div class="verification-summary">
+                        <h6><i class="fas fa-info-circle me-2"></i>Final Analysis:</h6>
+                        <p class="mb-0">
+                            {% if summary %}
+                                {{ summary }}
+                            {% else %}
+                                {% if input_text %}
+                                    Analysis in progress...
+                                {% else %}
+                                    Submit a claim to see the verification analysis.
+                                {% endif %}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-4 text-muted">
+        <div class="container">
+            <p>© 2023 VeriChain AI Network. All rights reserved.</p>
+            <div class="social-icons">
+                <a href="#" class="text-muted mx-2"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="text-muted mx-2"><i class="fab fa-github"></i></a>
+                <a href="#" class="text-muted mx-2"><i class="fab fa-linkedin"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('factForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading animation
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('verificationResults').style.display = 'none';
+            document.getElementById('verifyBtn').disabled = true;
+
+            // Submit the form after starting loading animation
+            this.submit();
+        });
+
+        // Auto-show results if we have any verification data
+        {% if verichain_result %}
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('verificationResults').style.display = 'block';
+            document.getElementById('verifyBtn').disabled = false;
+        {% endif %}
+    </script>
+</body>
+</html>
