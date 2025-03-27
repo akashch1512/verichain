@@ -1,16 +1,9 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "manage.py",
-        "use": "@vercel/python"
-      }
-    ],
-    "routes": [
-      {
-        "src": "/(.*)",
-        "dest": "manage.py"
-      }
-    ]
-  }
-  
+  "version": 2,
+  "builds": [
+    { "src": "FakeNewsCheak/wsgi.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "FakeNewsCheak/wsgi.py" }
+  ]
+}
